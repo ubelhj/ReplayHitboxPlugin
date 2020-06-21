@@ -30,7 +30,7 @@ class ReplayHitboxPlugin : public BakkesMod::Plugin::BakkesModPlugin
 {
 private:
 	std::shared_ptr<bool> hitboxOn;
-	std::shared_ptr<int> hitboxType;
+	//std::shared_ptr<int> hitboxType;
 	LineColor colors[2] = { {0, 255, 0, 240}, {75, 0, 130, 240} };
 	std::vector<Vector> hitbox;
 public:
@@ -42,7 +42,7 @@ public:
 	void OnFreeplayLoad(std::string eventName);
 	void OnFreeplayDestroy(std::string eventName);
 	void OnHitboxOnValueChanged(std::string oldValue, CVarWrapper cvar);
-	void OnHitboxTypeChanged(std::string oldValue, CVarWrapper cvar);
+	//void OnHitboxTypeChanged(std::string oldValue, CVarWrapper cvar);
 	void Render(CanvasWrapper canvas);
 };
 

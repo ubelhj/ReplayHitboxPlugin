@@ -36,9 +36,9 @@ void ReplayHitboxPlugin::onLoad()
 	cvarManager->registerCvar("cl_soccar_showhitbox", "0", "Show Hitbox", true, true, 0, true, 1).bindTo(hitboxOn);
 	cvarManager->getCvar("cl_soccar_showhitbox").addOnValueChanged(std::bind(&ReplayHitboxPlugin::OnHitboxOnValueChanged, this, std::placeholders::_1, std::placeholders::_2));
 
-	hitboxType = std::make_shared<int>(0);
-	cvarManager->registerCvar("cl_soccar_sethitboxtype", "0", "Set Hitbox Car Type", true, true, 0, true, 32767, false).bindTo(hitboxType);
-	cvarManager->getCvar("cl_soccar_sethitboxtype").addOnValueChanged(std::bind(&ReplayHitboxPlugin::OnHitboxTypeChanged, this, std::placeholders::_1, std::placeholders::_2));
+	//hitboxType = std::make_shared<int>(0);
+	//cvarManager->registerCvar("cl_soccar_sethitboxtype", "0", "Set Hitbox Car Type", true, true, 0, true, 32767, false).bindTo(hitboxType);
+	//cvarManager->getCvar("cl_soccar_sethitboxtype").addOnValueChanged(std::bind(&ReplayHitboxPlugin::OnHitboxTypeChanged, this, std::placeholders::_1, std::placeholders::_2));
 
 	gameWrapper->HookEvent("Function TAGame.Replay_TA.Tick", bind(&ReplayHitboxPlugin::OnFreeplayLoad, this, std::placeholders::_1));
 	gameWrapper->HookEvent("Function TAGame.Replay_TA.StopPlayback", bind(&ReplayHitboxPlugin::OnFreeplayDestroy, this, std::placeholders::_1));
@@ -54,7 +54,7 @@ void ReplayHitboxPlugin::onLoad()
 void ReplayHitboxPlugin::OnFreeplayLoad(std::string eventName)
 {
 	// get the 8 hitbox points for current car type
-	hitbox.clear();  // we'll reinitialize this in Render, for the first few ticks of free play, the car is null
+	//hitbox.clear();  // we'll reinitialize this in Render, for the first few ticks of free play, the car is null
 	//cvarManager->log(std::string("OnFreeplayLoad") + eventName);
 	if (*hitboxOn) {
 		gameWrapper->RegisterDrawable(std::bind(&ReplayHitboxPlugin::Render, this, std::placeholders::_1));
@@ -77,10 +77,11 @@ void ReplayHitboxPlugin::OnHitboxOnValueChanged(std::string oldValue, CVarWrappe
 	}
 }
 
-
+/*
 void ReplayHitboxPlugin::OnHitboxTypeChanged(std::string oldValue, CVarWrapper cvar) {
 	hitbox = CarManager::getHitboxPoints(static_cast<CARBODY>(cvar.getIntValue()), *gameWrapper);
 }
+*/
 
 
 
@@ -130,6 +131,7 @@ void ReplayHitboxPlugin::Render(CanvasWrapper canvas)
 		if (game.IsNull())
 			return;
 		ArrayWrapper<CarWrapper> cars = game.GetCars();
+
 		for (int i = 0; i < cars.Count(); i++) {
 			CarWrapper car = cars.Get(i);
 			if (car.IsNull())
@@ -139,7 +141,6 @@ void ReplayHitboxPlugin::Render(CanvasWrapper canvas)
 			//if (hitbox.size() == 0) { // initialize hitbox 
 			//	hitbox = CarManager::getHitboxPoints(static_cast<CARBODY>(*hitboxType), *gameWrapper);
 			//}
-
 			
 			hitbox = CarManager::getHitboxPoints(static_cast<CARBODY>(car.GetLoadoutBody()), *gameWrapper);
 
