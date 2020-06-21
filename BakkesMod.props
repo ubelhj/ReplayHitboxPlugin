@@ -12,9 +12,6 @@
       <AdditionalLibraryDirectories>$(BakkesModPath)\bakkesmodsdk\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>pluginsdk.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
-    <PostBuildEvent>
-      <Command>python "$(BakkesModPath)\bakkesmodsdk\bakkes_patchplugin.py" "$(TargetPath)"</Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup />
   <Target Name="ShowBakkesInfo" BeforeTargets="PrepareForBuild">
