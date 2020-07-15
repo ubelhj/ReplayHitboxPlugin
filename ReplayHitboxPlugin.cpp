@@ -7,7 +7,6 @@
 
 #include "pch.h"
 #include "ReplayHitboxPlugin.h"
-#include "CarManager.h"
 #include "Hitbox.h"
 #include <bakkesmod/wrappers/GameEvent/ServerWrapper.h>
 #include <bakkesmod/wrappers/GameObject/BallWrapper.h>
@@ -117,7 +116,17 @@ void ReplayHitboxPlugin::Render(CanvasWrapper canvas)
 			if (car.IsNull())
 				return;
 		
-			std::vector<Vector> hitbox = CarManager::getHitboxPoints(static_cast<CARBODY>(car.GetLoadoutBody()), *gameWrapper);
+			// Gets hitbox with some cached values
+			//std::vector<Vector> hitbox = CarManager::getHitboxPoints(static_cast<CARBODY>(car.GetLoadoutBody()), *gameWrapper, i);
+
+			// This is the most accurate way to get hitboxes
+			Vector extent = car.GetLocalCollisionExtent();
+			Vector offset = car.GetLocalCollisionOffset();
+			Hitbox* hb = new Hitbox(extent.X, extent.Y, extent.Z, offset.X, offset.Y, offset.Z);
+			std::vector<Vector> hitbox;
+			hb->getPoints(hitbox);
+			delete hb;
+
 			canvas.SetColor(255, 255, 0, 200);
 
 			Vector v = car.GetLocation();
