@@ -91,7 +91,6 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="CarManager.cpp" />
     <ClCompile Include="Hitbox.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -100,7 +99,6 @@
     <ClCompile Include="ReplayHitboxPlugin.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CarManager.h" />
     <ClInclude Include="Hitbox.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="ReplayHitboxPlugin.h" />
