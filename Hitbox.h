@@ -13,6 +13,7 @@ private:
 public:
 	Hitbox(float length, float width, float height, float x_offset, float y_offset, float z_offset);
 	void getPoints(std::vector<Vector>& pts);
+	bool isInValidMode();
 	~Hitbox();
 };
 

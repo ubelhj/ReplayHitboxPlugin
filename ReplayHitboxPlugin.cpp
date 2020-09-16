@@ -16,7 +16,7 @@
 
 
 
-BAKKESMOD_PLUGIN(ReplayHitboxPlugin, "Show hitboxes in replays", plugin_version, PLUGINTYPE_REPLAY)
+BAKKESMOD_PLUGIN(ReplayHitboxPlugin, "Show hitboxes in replays or local matches", plugin_version, PLUGINTYPE_REPLAY)
 
 ReplayHitboxPlugin::ReplayHitboxPlugin()
 {
@@ -31,36 +31,47 @@ ReplayHitboxPlugin::~ReplayHitboxPlugin()
 
 void ReplayHitboxPlugin::onLoad()
 {
-	hitboxOn = std::make_shared<bool>(true);
-	cvarManager->registerCvar("replay_showhitbox", "0", "Show Hitbox", true, true, 0, true, 1).bindTo(hitboxOn);
-	cvarManager->getCvar("replay_showhitbox").addOnValueChanged(std::bind(&ReplayHitboxPlugin::OnHitboxOnValueChanged, this, std::placeholders::_1, std::placeholders::_2));
+	replayHitboxOn = std::make_shared<bool>(true);
+	localHitboxOn = std::make_shared<bool>(true);
+	cvarManager->registerCvar("hitbox_replay", "0", "Show Hitbox in Replay", true, true, 0, true, 1).bindTo(replayHitboxOn);
+	cvarManager->getCvar("hitbox_replay").addOnValueChanged([this](std::string, CVarWrapper cvar) {
+		if (cvar.getBoolValue() && gameWrapper->IsInReplay()) {
+			OnReplayLoad();
+		} else {
+			gameWrapper->UnregisterDrawables();
+		}
+		});
 
-	gameWrapper->HookEvent("Function TAGame.Replay_TA.Tick", bind(&ReplayHitboxPlugin::OnFreeplayLoad, this, std::placeholders::_1));
-	gameWrapper->HookEvent("Function TAGame.Replay_TA.StopPlayback", bind(&ReplayHitboxPlugin::OnFreeplayDestroy, this, std::placeholders::_1));
+	gameWrapper->HookEvent("Function TAGame.Replay_TA.GetMapToLoad", [this](std::string) { OnReplayLoad(); });
+	gameWrapper->HookEvent("Function TAGame.Replay_TA.StopPlayback", [this](std::string) { gameWrapper->UnregisterDrawables(); });
+
+	cvarManager->registerCvar("hitbox_local", "0", "Show Hitbox in Local Matches", true, true, 0, true, 1).bindTo(localHitboxOn);
+	cvarManager->getCvar("hitbox_local").addOnValueChanged([this](std::string, CVarWrapper cvar) {
+		if (cvar.getBoolValue() && gameWrapper->IsInGame() && !gameWrapper->IsInOnlineGame()) {
+			OnMatchLoad();
+		} else {
+			gameWrapper->UnregisterDrawables();
+		}
+		});
+
+	gameWrapper->HookEvent("Function TAGame.GameEvent_TA.OnInit", [this](std::string) { OnMatchLoad(); });
+	gameWrapper->HookEvent("Function TAGame.GameEvent_TA.Destroyed", [this](std::string) { gameWrapper->UnregisterDrawables(); });
 
 }
 
-void ReplayHitboxPlugin::OnFreeplayLoad(std::string eventName)
+void ReplayHitboxPlugin::OnReplayLoad()
 {
 	// draw the car's hitboxes
-	if (*hitboxOn) {
+	if (*replayHitboxOn) {
 		gameWrapper->RegisterDrawable(std::bind(&ReplayHitboxPlugin::Render, this, std::placeholders::_1));
 	}
 }
 
-void ReplayHitboxPlugin::OnFreeplayDestroy(std::string eventName)
+void ReplayHitboxPlugin::OnMatchLoad()
 {
-	gameWrapper->UnregisterDrawables();
-}
-
-void ReplayHitboxPlugin::OnHitboxOnValueChanged(std::string oldValue, CVarWrapper cvar)
-{
-	if (cvar.getBoolValue() && gameWrapper->IsInReplay()) {
-		OnFreeplayLoad("Load");
-	}
-	else
-	{
-		OnFreeplayDestroy("Destroy");
+	// draw the car's hitboxes
+	if (*localHitboxOn) {
+		gameWrapper->RegisterDrawable(std::bind(&ReplayHitboxPlugin::Render, this, std::placeholders::_1));
 	}
 }
 
@@ -102,63 +113,71 @@ Vector Rotate(Vector aVec, double roll, double yaw, double pitch)
 
 void ReplayHitboxPlugin::Render(CanvasWrapper canvas)
 {
-	if (*hitboxOn && gameWrapper->IsInReplay())
-	{
-
-		ServerWrapper game = gameWrapper->GetGameEventAsReplay();
-
-		if (game.IsNull())
-			return;
-		ArrayWrapper<CarWrapper> cars = game.GetCars();
-
-		for (int i = 0; i < cars.Count(); i++) {
-			CarWrapper car = cars.Get(i);
-			if (car.IsNull())
-				return;
-		
-			// Gets hitbox with some cached values
-			//std::vector<Vector> hitbox = CarManager::getHitboxPoints(static_cast<CARBODY>(car.GetLoadoutBody()), *gameWrapper, i);
-
-			// This is the most accurate way to get hitboxes
-			Vector extent = car.GetLocalCollisionExtent();
-			Vector offset = car.GetLocalCollisionOffset();
-			Hitbox* hb = new Hitbox(extent.X, extent.Y, extent.Z, offset.X, offset.Y, offset.Z);
-			std::vector<Vector> hitbox;
-			hb->getPoints(hitbox);
-			delete hb;
-
-			canvas.SetColor(255, 255, 0, 200);
-
-			Vector v = car.GetLocation();
-			Rotator r = car.GetRotation();
-
-			double dPitch = (double)r.Pitch / 32764.0 * 3.14159;
-			double dYaw = (double)r.Yaw / 32764.0 * 3.14159;
-			double dRoll = (double)r.Roll / 32764.0 * 3.14159;
-
-			Vector2 carLocation2D = canvas.Project(v);
-			Vector2 hitbox2D[8];
-			for (int i = 0; i < 8; i++) {
-				hitbox2D[i] = canvas.Project(Rotate(hitbox[i], dRoll, -dYaw, dPitch) + v);
-			}
-
-			canvas.DrawLine(hitbox2D[0], hitbox2D[1]);
-			canvas.DrawLine(hitbox2D[1], hitbox2D[2]);
-			canvas.DrawLine(hitbox2D[2], hitbox2D[3]);
-			canvas.DrawLine(hitbox2D[3], hitbox2D[0]);
-			canvas.DrawLine(hitbox2D[4], hitbox2D[5]);
-			canvas.DrawLine(hitbox2D[5], hitbox2D[6]);
-			canvas.DrawLine(hitbox2D[6], hitbox2D[7]);
-			canvas.DrawLine(hitbox2D[7], hitbox2D[4]);
-			canvas.DrawLine(hitbox2D[0], hitbox2D[4]);
-			canvas.DrawLine(hitbox2D[1], hitbox2D[5]);
-			canvas.DrawLine(hitbox2D[2], hitbox2D[6]);
-			canvas.DrawLine(hitbox2D[3], hitbox2D[7]);
-
-			canvas.SetPosition(carLocation2D.minus((Vector2{ 10,10 })));
-			canvas.FillBox((Vector2{ 20, 20 }));
-		}
+	//cvarManager->log("Rendering");
+	ServerWrapper* serverPtr;
+	if (*replayHitboxOn && gameWrapper->IsInReplay()) {
+		serverPtr = &gameWrapper->GetGameEventAsReplay();
 	}
+	else if (*localHitboxOn && gameWrapper->IsInGame() && !gameWrapper->IsInOnlineGame()) {
+		serverPtr = &gameWrapper->GetGameEventAsServer();
+	} else {
+		return;
+	}
+
+	ServerWrapper game = *serverPtr;
+
+	if (game.IsNull())
+		return;
+	ArrayWrapper<CarWrapper> cars = game.GetCars();
+
+	for (int i = 0; i < cars.Count(); i++) {
+		CarWrapper car = cars.Get(i);
+		if (car.IsNull())
+			return;
+		
+		// Gets hitbox with some cached values
+		//std::vector<Vector> hitbox = CarManager::getHitboxPoints(static_cast<CARBODY>(car.GetLoadoutBody()), *gameWrapper, i);
+
+		// This is the most accurate way to get hitboxes
+		Vector extent = car.GetLocalCollisionExtent();
+		Vector offset = car.GetLocalCollisionOffset();
+		Hitbox* hb = new Hitbox(extent.X, extent.Y, extent.Z, offset.X, offset.Y, offset.Z);
+		std::vector<Vector> hitbox;
+		hb->getPoints(hitbox);
+		delete hb;
+
+		canvas.SetColor(255, 255, 0, 200);
+
+		Vector v = car.GetLocation();
+		Rotator r = car.GetRotation();
+
+		double dPitch = (double)r.Pitch / 32764.0 * 3.14159;
+		double dYaw = (double)r.Yaw / 32764.0 * 3.14159;
+		double dRoll = (double)r.Roll / 32764.0 * 3.14159;
+
+		Vector2 carLocation2D = canvas.Project(v);
+		Vector2 hitbox2D[8];
+		for (int i = 0; i < 8; i++) {
+			hitbox2D[i] = canvas.Project(Rotate(hitbox[i], dRoll, -dYaw, dPitch) + v);
+		}
+
+		canvas.DrawLine(hitbox2D[0], hitbox2D[1]);
+		canvas.DrawLine(hitbox2D[1], hitbox2D[2]);
+		canvas.DrawLine(hitbox2D[2], hitbox2D[3]);
+		canvas.DrawLine(hitbox2D[3], hitbox2D[0]);
+		canvas.DrawLine(hitbox2D[4], hitbox2D[5]);
+		canvas.DrawLine(hitbox2D[5], hitbox2D[6]);
+		canvas.DrawLine(hitbox2D[6], hitbox2D[7]);
+		canvas.DrawLine(hitbox2D[7], hitbox2D[4]);
+		canvas.DrawLine(hitbox2D[0], hitbox2D[4]);
+		canvas.DrawLine(hitbox2D[1], hitbox2D[5]);
+		canvas.DrawLine(hitbox2D[2], hitbox2D[6]);
+		canvas.DrawLine(hitbox2D[3], hitbox2D[7]);
+
+		canvas.SetPosition(carLocation2D.minus((Vector2{ 10,10 })));
+		canvas.FillBox((Vector2{ 20, 20 }));
+	}
+	
 }
 
 void ReplayHitboxPlugin::onUnload()

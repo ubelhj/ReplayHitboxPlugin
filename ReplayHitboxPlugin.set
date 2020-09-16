@@ -1,3 +1,4 @@
-Replay Hitbox Plugin
-1|Show hitboxes in replay|replay_showhitbox
+Replay and Local Hitbox Plugin
+1|Show hitboxes in replay|hitbox_replay
+1|Show hitboxes in exhibition|hitbox_local
 9|Made by JerryTheBee#1117 on top of Hitbox Plugin by megasplat#2288

@@ -4,7 +4,7 @@
 #include "bakkesmod/plugin/pluginwindow.h"
 
 
-constexpr auto plugin_version = "1.0";
+constexpr auto plugin_version = "2.0";
 
 /*
 Colors the prediction line can have
@@ -29,7 +29,8 @@ struct PredictedPoint
 class ReplayHitboxPlugin : public BakkesMod::Plugin::BakkesModPlugin
 {
 private:
-	std::shared_ptr<bool> hitboxOn;
+	std::shared_ptr<bool> replayHitboxOn;
+	std::shared_ptr<bool> localHitboxOn;
 	LineColor colors[2] = { {0, 255, 0, 240}, {75, 0, 130, 240} };
 public:
 	ReplayHitboxPlugin();
@@ -37,9 +38,8 @@ public:
 	virtual void onLoad();
 	virtual void onUnload();
 
-	void OnFreeplayLoad(std::string eventName);
-	void OnFreeplayDestroy(std::string eventName);
-	void OnHitboxOnValueChanged(std::string oldValue, CVarWrapper cvar);
+	void OnReplayLoad();
+	void OnMatchLoad();
 	void Render(CanvasWrapper canvas);
 };
 
